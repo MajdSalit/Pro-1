@@ -368,5 +368,38 @@ class classesManagementController extends Controller
         }
     }
 
-    
+    public function getPaginateStudents()
+    {
+        try {
+
+            //get the students from the student table, then User() relation to get the info
+            $students = User::with(['student.SchoolClass:id,className'])
+                ->where('role', 'student')
+                ->get()
+                ->map(function ($user) {
+                    return [
+                        'user_id' => $user->id,
+                        'student_id' => $user->student->id,
+                        'full_name' => trim(implode(' ', array_filter([$user->name, $user->middleName, $user->lastName]))),
+                        'email' => $user->email,
+                        'phone' => $user->phoneNumber,
+                        'photo' => $user->student->photo,
+                        'gpa' => $user->student->Gpa,
+                        'class_id' => $user->student->class_id ?? '',
+                        'class_name' => $user->student->schoolClass->className ?? '',
+                        'absences number' => $user->student->AbsenceStudent->absence_num ?? ''
+                    ];
+                });
+
+            return response()->json([
+                'status' => true,
+                'data' => $students
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => false,
+                'message' => $th->getMessage(),
+            ], 500);
+        }
+    }
 }

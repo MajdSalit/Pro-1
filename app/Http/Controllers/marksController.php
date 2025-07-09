@@ -4,28 +4,25 @@ namespace App\Http\Controllers;
 
 use App\Models\Mark;
 use App\Models\Subject;
+use App\Models\Teacher;
 use App\Models\schoolClass;
 use App\Models\TeacherClass;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Rap2hpoutre\FastExcel\FastExcel;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class marksController extends Controller
 {
         // MAJD //get the teacher's classses based on teacher id
 
-    public function getAllTeacherInfo($teacherID)
+    public function getTeacherClasses()
     {
-
-
         try {
-
-
-
-
-
-
+            $user=Auth::user();
+            $teacher=Teacher::where('user_id',$user->id)->first();
             $teacherClasses = TeacherClass::select(
                 'teacher_classes.teacher_id',
                 'teacher_classes.class_id',
@@ -35,7 +32,7 @@ class marksController extends Controller
             )
                 ->join('classes', 'teacher_classes.class_id', '=', 'classes.id')
                 ->join('subjects', 'teacher_classes.subject_id', '=', 'subjects.id')
-                ->where('teacher_id', $teacherID)
+                ->where('teacher_id', $teacher->id)
                 ->get();
 
             return response()->json([

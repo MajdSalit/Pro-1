@@ -65,42 +65,60 @@ public function checkJustifications(){
         ],404);
     }
 }
-public function studentsAttendanceForm(Request $request){
-    try{
-    //validating
-        $validateClass=Validator::make($request->all(),[
-            'class' =>  'regex:/^\d{1,2}-[A-Z]$/',
-        ]);
-        if($validateClass->fails()){
-            return response()->json([
-                    'status'=>false,
-                    'message'=>'validation error',
-                    'errors'=>$validateClass->errors(),
-            ],404);
-        }
-        //getting the class id
-        $class = SchoolClass::where('className', $request->class)->first();
-        if (!$class) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Class not found',
-            ], 404);
-        }
-        //getting students
-        $students=Student::where('class_id',$class->id)->get();
-        //returning data
-        return response()->json([
-            'status'=>true,
-            'data'=>$students,
-        ],200);
 
-    }catch(\Throwable $th){
-        return response()->json([
-            'status'=>false,
-            'message'=>$th->getMessage()
-        ],404);
+   public function studentsAttendanceForm(Request $request)
+    {
+        try {
+            // 1. Validate the incoming request
+            $validateClass = Validator::make($request->all(), [
+                'class' => 'required|regex:/^\d{1,2}-[A-Z]$/',
+            ]);
+
+            if ($validateClass->fails()) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Validation error',
+                    'errors'  => $validateClass->errors(),
+                ], 400); // 400 is more appropriate for validation errors
+            }
+
+            // 2. Find the class or fail
+            $class = SchoolClass::where('className', $request->class)->first();
+
+            if (!$class) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Class not found',
+                ], 404);
+            }
+
+            // 3. Get all students from that class and eager load their user data
+            $students = Student::with('user')->where('class_id', $class->id)->get();
+
+            // 4. Transform the student data into the desired format
+            $studentList = $students->map(function ($student) {
+                // Check if user relation is loaded to prevent errors
+                if (!$student->user) {
+                    return null;
+                }
+                return [
+                    'studentId'   => $student->id,
+                    'studentName' => $student->user->name, // Assuming 'name' is the column in your 'users' table
+                ];
+            })->filter(); // Use filter() to remove any students who might not have a user record
+
+            // 5. Return the final, formatted response
+            return response()->json([
+                'data' => $studentList->values(), // .values() to reset keys and ensure a clean array
+            ], 200);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status'  => false,
+                'message' => $th->getMessage(),
+            ], 500); // 500 for general server errors
+        }
     }
-}
 
 public function studentsAttendanceSubmit(Request $request){
     try{
@@ -333,10 +351,56 @@ public function studentsAttendanceSubmit(Request $request){
             if($absence->absence_num != 5){
                 $absence->absence_num+=1;
             }else{
-                return response()->json([
+                return response()->json([   
                     'status'=>false,
                     'message'=>'the absence num to this student is 5 already we can increase it due to school policy',
                 ],422);
+            }
+            if($absence->absence_num == 5){
+                $absence->warning+=1;
+                $absence->num=0;
+            }
+            $absence->save();
+            //returning success message
+            return response()->json([
+                'status'=>true,
+                'message'=>'the absence num has been increased by one successfully!',
+            ]);
+        }catch(\Throwable $th){
+            return response()->json([
+                'status'=>false,
+                'message'=>$th->getMessage(),
+            ]);
+        } 
+    }
+
+    
+    public function decrementStudentAbsence(Request $request){
+        try{
+            //validation
+            $validation=Validator::make($request->all(),[
+                'studentId' =>'required|exists:students,id',
+            ]);
+            if($validation->fails()){
+                return response()->json([
+                    'status'=>false,
+                    'message'=>$validation->errors(),
+                ],422);
+            }
+            //getting the absence 
+            $absence=absenceStudent::where('student_id',$request->studentId)->first();
+            //increasing by one
+            if($absence->absence_num != 0){
+                $absence->absence_num-=1;
+            }else{
+                return response()->json([   
+                    'status'=>false,
+                    'message'=>'the absence num to this student is 5 already we can increase it due to school policy',
+                ],422);
+            }
+            if($absence->absence_num == 0 && $absence->warning !=0){
+                $absence->warning-=1;
+                $absence->num=5;
             }
             $absence->save();
             //returning success message

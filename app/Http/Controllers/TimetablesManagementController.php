@@ -105,39 +105,52 @@ class TimetablesManagementController extends Controller
             ],500);
         }
     }
-    
-     public function getStudentWeeklySchedule(){
-        try{
-            //first of all we wanna get the user
-            $user=Auth::user();
-            //now we wanna get the student
-            $student=Student::where('user_id',$user->id)->first();
-            //now we wanna get the briefs
-            $briefs=ScheduleBrief::where('class_id',$student->class_id)->get();
-            //now we wanna get the sessions
-            $sessions=Session::where('class_id',$student->class_id)->get();
-            //now we wanna get the subjects
-            $subjects=[];
-            $i=0;
-            foreach($sessions as $session){
-                //getting the subject by id
-                $subjects[$i]=Subject::where('id',$session->subject_id)->first();
-                $i+=1;
-            }
-            //returning data
+
+    public function getStudentWeeklySchedule()
+    {
+        try {
+            // 1. Get the authenticated user and their student profile
+            $user = Auth::user();
+            $student = Student::where('user_id', $user->id)->firstOrFail();
+
+            // 2. Fetch all sessions for the student's class
+            // Eager load the related 'subject' and 'scheduleBrief' data to avoid N+1 issues
+            $sessions = Session::with(['subject', 'scheduleBrief'])
+                               ->where('class_id', $student->class_id)
+                               ->get();
+
+            // 3. Transform the collection into the desired structure
+            $schedule = $sessions->map(function ($session) {
+                // Check if relations are loaded to prevent errors
+                if (!$session->subject || !$session->scheduleBrief) {
+                    return null; // or handle this case as needed
+                }
+                
+                return [
+                    'subject'   => $session->subject->subjectName,
+                    'session'   => $session->session,
+                    'cancelled' => $session->cancelled,
+                    'day'       => $session->scheduleBrief->day,
+                    'semester'  => $session->scheduleBrief->semester,
+                    'year'      => $session->scheduleBrief->year,
+                ];
+            })->filter()->values(); // ->filter() removes any nulls, ->values() resets array keys
+
+            // 4. Return the formatted data
+            //return response()->json($schedule);
             return response()->json([
                 'status'=>true,
-                'briefs'=>$briefs,
-                'sessions'=>$sessions,
-                'subjects'=>$subjects,
+                'schedule'=>$schedule,
             ]);
-        }catch(\Throwable $th){
+
+        } catch (\Throwable $th) {
             return response()->json([
-                'status'=>false,
-                'message'=>$th->getMessage(),
-            ],500);
+                'status'  => false,
+                'message' => $th->getMessage(),
+            ], 500);
         }
-     }
+    }
+
 
      public function getStudentExamSchedule(){
         try{

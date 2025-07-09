@@ -38,13 +38,14 @@ Route::post('/resetPassword',[authController::class,'resetPassword']);//done w r
 
 //student attendance management
 //1-
-Route::get('/studentsAttendanceForm',[StudentAttendanceController::class,'studentsAttendanceForm'])->middleware('auth:sanctum','teacher');//retrieving student data by class name to the teacher check the attendance //done w request
+Route::post('/studentsAttendanceForm',[StudentAttendanceController::class,'studentsAttendanceForm'])->middleware('auth:sanctum','teacher');//retrieving student data by class name to the teacher check the attendance //done w request
 Route::post('/studentsAttendanceSubmit',[StudentAttendanceController::class,'studentsAttendanceSubmit'])->middleware('auth:sanctum','teacher');//done w request
 //2-for supervisor
-Route::get('/checkStudentAbsenceReport',[StudentAttendanceController::class,'checkStudentAbsenceReport'])->middleware('auth:sanctum','supervisor');//checking attendance report //done w request
-Route::get('/checkStudentWarnings',[StudentAttendanceController::class,'checkStudentWarnings'])->middleware('auth:sanctum','supervisor');//checking student warnings and how many day they did no attend //done w request
+Route::post('/checkStudentAbsenceReport',[StudentAttendanceController::class,'checkStudentAbsenceReport'])->middleware('auth:sanctum','supervisor');//checking attendance report //done w request
+Route::post('/checkStudentWarnings',[StudentAttendanceController::class,'checkStudentWarnings'])->middleware('auth:sanctum','supervisor');//checking student warnings and how many day they did no attend //done w request
 Route::post('/submitDailyReports',[StudentAttendanceController::class,'submitDailyReports'])->middleware('auth:sanctum','supervisor');//giving the supervisor the ability to submit all the daily reports //done w request
 Route::post('/incrementStudentAbsence',[StudentAttendanceController::class,'incrementStudentAbsence'])->middleware('auth:sanctum','supervisor');//giving the supervisor the ability to increment student absence num by one //done w request
+Route::post('/decrementStudentAbsence',[StudentAttendanceController::class,'decrementStudentAbsence'])->middleware('auth:sanctum','supervisor');//giving the supervisor the ability to decrement student absence num by one //done 
 
 Route::get('/searchStudentById',[StudentAttendanceController::class,'searchStudentById'])->middleware('auth:sanctum','supervisor');//giving the supervisor the ability to see all student based on the name and class name //done w request
 Route::get('/showAllStudents',[StudentAttendanceController::class,'showAllStudents'])->middleware('auth:sanctum','supervisor');//giving the supervisor the ability to see all student based on the name and class name //done w request
@@ -59,6 +60,7 @@ Route::post('/uploadJustification',[StudentAttendanceController::class,'uploadJu
 //4-
 Route::get('/checkJustifications',[StudentAttendanceController::class,'checkJustifications'])->middleware('auth:sanctum','supervisor');//done w request
 //classes managmenet
+Route::get('/getPaginateStudents', [classesManagementController::class, 'getPaginateStudents'])->middleware('auth:sanctum', 'komy'); // done w request
 Route::Put('/createClasses',[classesManagementController::class,'createClasses'])->middleware('auth:sanctum','supervisor');//done w request
 Route::get('/showClasses',[classesManagementController::class,'showClasses'])->middleware('auth:sanctum','supervisor');//done w request
 Route::post('/editClass',[classesManagementController::class,'editClass'])->middleware('auth:sanctum','supervisor');//done w request
@@ -67,6 +69,7 @@ Route::delete('/deleteClass',[classesManagementController::class,'deleteClass'])
 Route::post('/assignTeacherToClass',[classesManagementController::class,'assignTeacherToClass'])->middleware('auth:sanctum','supervisor');//done w request //dont froget to make it assign a specific tracher to three classes in the maximum
 Route::post('/overWriteTeacherToClass',[classesManagementController::class,'overWriteTeacherToClass'])->middleware('auth:sanctum','supervisor');//done 
 Route::delete('/unassignTeacherToClass',[classesManagementController::class,'unassignTeacherToClass'])->middleware('auth:sanctum','supervisor');//done
+Route::get('/getTeacherClasses', [marksController::class,'getTeacherClasses'])->middleware('auth:sanctum','teacher');//done
 //timetables management
 route::put('/createWeeklySchedule',[TimetablesManagementController::class,'createWeeklySchedule'])->middleware('auth:sanctum','supervisor');//done w request
 route::put('/uploadExamSchedule',[TimetablesManagementController::class,'uploadExamSchedule'])->middleware('auth:sanctum','supervisor');//done
@@ -82,11 +85,9 @@ Route::get('/getSubjectById',[SubjectsManagementController::class,'getSubjectByI
 Route::put('/updateSubject',[SubjectsManagementController::class,'updateSubject'])->middleware('auth:sanctum','supervisor');//done
 Route::delete('/deleteSubject',[SubjectsManagementController::class,'deleteSubject'])->middleware('auth:sanctum','supervisor');//done
 
-
 Route::post('/save-fcm-token', [fcmController::class, 'saveFcmToken']);
 //////////////////////////////////////////////////////////KOMAY STUFF/////////////////////////////////////////////////////
 //marks management
-Route::get('/getAllTeacherInfo/{teacherID}', [marksController::class,'getAllTeacherInfo']);
 Route::get('/getEmptyExcelCheatForMarks/{teacherID}/{classID}/{subjectID}/{semester}/{type}', [marksController::class,'getEmptyExcelCheatForMarks']);
 Route::post('/uploadMarkExcelCheat', [marksController::class,'uploadMarkExcelCheat']);
 Route::get('/studentGetResult/{studentID}', [marksController::class,'studentGetResult']);
